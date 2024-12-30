@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "gcodezaa"
+version = "0.1.0"
+description = "GCode post-processing script for z anti-aliasing or simple non-planar top surfaces"
+authors = ["Thea Schöbl <dev@theaninova.de>"]
+readme = "README.md"
+license = "GPL-3.0-or-later"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11.0"
+numpy = "^2.2.1"
+open3d = "^0.18.0"
+scikit-learn = "^1.6.0"
+pyyaml = "^6.0.2"
+addict = "^2.4.0"
+pillow = "^11.0.0"
+pandas = "^2.2.3"
+tqdm = "^4.67.1"
+
