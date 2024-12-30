@@ -22,3 +22,8 @@ get this implemented in slicers directly.
 1. Slice normally
 2. Create a new directory for the plate models
 3. For each object on the plate, right click and select "Export as one STL..." and save it **as the exact object name** to the directory
+
+## Results
+
+![](./images/benchy_roof_side.jpg)
+![](./images/benchy_side.jpg)
