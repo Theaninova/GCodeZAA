@@ -93,6 +93,8 @@ class Extrusion:
             raise ValueError("Cannot contour with no extrusion")
 
         dx, dy, _ = self.delta()
+        l = math.sqrt(dx**2 + dy**2)
+        dir = (dx / l, dy / l)
 
         self.p = (self.p[0], self.p[1], z)
 
@@ -135,27 +137,15 @@ class Extrusion:
             hit_down = max(0, abs(hits_down["t_hit"][i].item()))
             normal_up = hits_up["primitive_normals"][i]
             normal_down = hits_down["primitive_normals"][i]
-            line_width = 0.4
             use_up = (
                 (normal_up[2].item() > 0 and normal_up[2].item() <= 0)
                 or normal_down[2].item() <= 0
                 or hit_up <= hit_down
             )
 
-            if use_up and hit_up <= height / 2:
-                normal = normal_up
-                coverage = math.tan(math.acos(normal[2].item())) * line_width / 4
-                hit = max(0, min(height / 2, hit_up))
-                if normal[2].item() < 0.5:
-                    d = 0
-                elif coverage > 0:
-                    d = hit * max(
-                        0, min(1, (1 - max(0, hit_up - height / 2) / coverage))
-                    )
-                else:
-                    d = hit
+            if use_up and hit_up <= height / 2 + 1e-6:
+                d = min(height / 2, hit_up)
             elif normal_down[2].item() > 0 and hit_down <= height / 2 + 1e-6:
-                normal = normal_down
                 d = max(-height / 2, -hit_down)
             else:
                 d = 0
