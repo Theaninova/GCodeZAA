@@ -30,12 +30,12 @@ get this implemented in slicers directly.
 ## Todo
 
 - [x] Ironing support
-- [ ] Wall width flow compensation
+- [x] Smooth flow transition
+- [ ] Flow normalization (right now speed is kept constant)
 - [ ] Travel moves!
-- [ ] proper detection if the surface is covered by another line in the next layer to avoid artifacts.
-      Percentage coverage would be even better as a transition factor between normal z and contoured z.
 - [ ] Overhang z contouring
 - [ ] Integrate properly into OrcaSlicer
+- [ ] Arc (G2/G3) support
 
 ## Usage
 
