@@ -136,15 +136,29 @@ class Extrusion:
             normal_up = hits_up["primitive_normals"][i]
             normal_down = hits_down["primitive_normals"][i]
             line_width = 0.4
-            if normal_up[2].item() > 0:
+            use_up = (
+                (normal_up[2].item() > 0 and normal_up[2].item() <= 0)
+                or normal_down[2].item() <= 0
+                or hit_up <= hit_down
+            )
+
+            if use_up and hit_up <= height / 2:
                 normal = normal_up
-                coverage = math.tan(math.acos(normal[2].item())) * line_width / 2
+                coverage = math.tan(math.acos(normal[2].item())) * line_width / 4
                 hit = max(0, min(height / 2, hit_up))
-                d = hit * max(0, min(1, (1 - max(0, hit_up - height / 2) / coverage)))
-            else:
-                hit = -hit_down if hit_down <= height / 2 else 0
+                if normal[2].item() < 0.5:
+                    d = 0
+                elif coverage > 0:
+                    d = hit * max(
+                        0, min(1, (1 - max(0, hit_up - height / 2) / coverage))
+                    )
+                else:
+                    d = hit
+            elif normal_down[2].item() > 0 and hit_down <= height / 2 + 1e-6:
                 normal = normal_down
-                d = max(-height / 2, min(height / 2, hit))
+                d = max(-height / 2, -hit_down)
+            else:
+                d = 0
 
             do_split = demo_split is not None and rays_up[i][1] < demo_split
 
