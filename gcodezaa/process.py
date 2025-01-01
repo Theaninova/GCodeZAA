@@ -6,15 +6,27 @@ import open3d
 
 
 def parse_simple_args(gcode: str) -> dict:
-    return dict(map(lambda x: (x[0], x[1:].strip()), gcode.split(" ")))
+    return dict(
+        map(
+            lambda x: (x[0], x[1:].strip()),
+            filter(lambda x: x != "", gcode.split(";", maxsplit=1)[0].split(" ")),
+        )
+    )
 
 
 def parse_klipper_args(gcode: str) -> dict:
     return dict(map(lambda x: list(map(str.strip, x.split("=", 1))), gcode.split(" ")))
 
 
-def process_gcode(gcode: list[str], model_dir: str) -> list[str]:
+def process_gcode(
+    gcode: list[str],
+    model_dir: str,
+    plate_object: tuple[str, float, float] | None = None,
+) -> list[str]:
     ctx = ProcessorContext(gcode, model_dir)
+    if plate_object is not None:
+        register_object(ctx, plate_object[0], plate_object[1], plate_object[2])
+        ctx.active_object = ctx.exclude_object[plate_object[0]]
     is_in_executable = False
     while ctx.gcode_line < len(ctx.gcode):
         if not is_in_executable and ctx.line.startswith(
@@ -27,12 +39,29 @@ def process_gcode(gcode: list[str], model_dir: str) -> list[str]:
             process_line(ctx)
         ctx.gcode_line += 1
 
+    ctx.gcode[0] = f"; GCodeZAA\n" + ctx.gcode[0]
+
     return ctx.gcode
+
+
+def register_object(ctx: ProcessorContext, name: str, x: float, y: float):
+    model_path = os.path.join(ctx.model_dir, name)
+    mesh = open3d.t.io.read_triangle_mesh(model_path, enable_post_processing=True)
+    min_bound = mesh.get_min_bound()
+    max_bound = mesh.get_max_bound()
+    center = min_bound + (max_bound - min_bound) / 2
+    mesh.translate([x - center[0].item(), y - center[1].item(), -min_bound[2].item()])
+
+    scene = open3d.t.geometry.RaycastingScene()
+    scene.add_triangles(mesh)
+
+    ctx.exclude_object[name] = scene
 
 
 def process_line(ctx: ProcessorContext):
     write_back = ""
     ctx.extrusion = []
+    ctx.gcode[ctx.gcode_line] = ctx.line.strip() + "\n"
 
     if ctx.line.startswith("G0 ") or ctx.line.startswith("G1 "):
         args = parse_simple_args(ctx.line)
@@ -87,31 +116,17 @@ def process_line(ctx: ProcessorContext):
                 float(args.get("Z", ctx.last_p[2])),
             )
         pass
-    elif ctx.line.startswith("M73"):
-        args = parse_simple_args(ctx.line)
-        if "P" in args:
-            ctx.progress_percent = float(args["P"])
-        if "R" in args:
-            ctx.progress_remaining_minutes = float(args["R"])
+    # elif ctx.line.startswith("M73"):
+    #    args = parse_simple_args(ctx.line)
+    #    if "P" in args:
+    #        ctx.progress_percent = float(args["P"])
+    #    if "R" in args:
+    #        ctx.progress_remaining_minutes = float(args["R"])
     elif ctx.line.startswith("EXCLUDE_OBJECT_DEFINE"):
         args = parse_klipper_args(ctx.line.removeprefix("EXCLUDE_OBJECT_DEFINE "))
         name = args["NAME"]
         x, y = map(float, args["CENTER"].split(","))
-        model_path = os.path.join(
-            ctx.model_dir, re.sub(r"\.stl_.*$", ".stl", name)
-        )  # dumb hack
-        mesh = open3d.t.io.read_triangle_mesh(model_path, enable_post_processing=True)
-        min_bound = mesh.get_min_bound()
-        max_bound = mesh.get_max_bound()
-        center = min_bound + (max_bound - min_bound) / 2
-        mesh.translate(
-            [x - center[0].item(), y - center[1].item(), -min_bound[2].item()]
-        )
-
-        scene = open3d.t.geometry.RaycastingScene()
-        scene.add_triangles(mesh)
-
-        ctx.exclude_object[name] = scene
+        register_object(ctx, re.sub(r"\.stl_.*$", ".stl", name), x, y)
     elif ctx.line.startswith("EXCLUDE_OBJECT_START"):
         args = parse_klipper_args(ctx.line.removeprefix("EXCLUDE_OBJECT_START "))
         ctx.active_object = ctx.exclude_object[args["NAME"]]

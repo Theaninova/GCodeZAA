@@ -32,7 +32,7 @@ class SlicerSyntax:
     layer_change: str = ";LAYER_CHANGE"
     z: str = ";Z:"
     height: str = ";HEIGHT:"
-    width: str = ";HEIGHT:"
+    width: str = ";WIDTH:"
 
     wipe_start: str = ";WIPE_START"
     wipe_end: str = ";WIPE_END"
@@ -51,3 +51,6 @@ class SlicerSyntax:
             case Slicer.BAMBU:
                 self.layer_change = "; CHANGE_LAYER"
                 self.line_type = "; FEATURE:"
+                self.z = "; Z_HEIGHT:"
+                self.height = "; LAYER_HEIGHT:"
+                self.width = "; LINE_WIDTH:"

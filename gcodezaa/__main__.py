@@ -10,15 +10,19 @@ def main():
     parser.add_argument("input_gcode", type=str, help="Path to the input G-code file")
     parser.add_argument("-m", "--models", type=str, help="Path to the models directory")
     parser.add_argument("-o", "--output", type=str, required=False)
+    parser.add_argument("-p", "--position", type=str, required=False)
+    parser.add_argument("-n", "--name", type=str, required=False)
     args = parser.parse_args()
 
     with open(args.input_gcode, "r", encoding="utf-8") as f:
-        result = process_gcode(f.readlines(), args.models)
-        if args.output is not None:
-            with open(args.output, "w", encoding="utf-8") as f:
-                f.writelines(result)
+        if args.position is not None and args.name is not None:
+            x, y = args.position.split(",", maxsplit=1)
+            plate_model = (args.name, float(x), float(y))
         else:
-            f.writelines(result)
+            plate_model = None
+        result = process_gcode(f.readlines(), args.models, plate_model)
+    with open(args.output or args.input_gcode, "w", encoding="utf-8") as f:
+        f.writelines(result)
     logging.info("Success")
 
 

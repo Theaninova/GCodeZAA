@@ -7,6 +7,7 @@ class ProcessorContext:
     syntax: SlicerSyntax
     config_block: dict[str, str] = {}
     model_dir: str
+    position_hint: tuple[float, float] | None = None
     gcode: list[str]
     gcode_line = 0
 

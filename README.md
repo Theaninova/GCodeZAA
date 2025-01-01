@@ -39,6 +39,8 @@ get this implemented in slicers directly.
 
 ## Usage
 
+### Orca Slicer + Klipper
+
 1. Slice normally
 2. Create a new directory for the plate models
 3. For each object on the plate, right click and select "Export as one STL..." and save it **as the exact object name** to the directory
@@ -46,6 +48,19 @@ get this implemented in slicers directly.
 5. Run the script as `python gcodezaa [path to gcode] -o [path to output] -m [path to the stl directory]`
 
 You can use PrusaSlicer to preview the generated GCode, though line height and width will not be displayed properly.
+
+### Bambu Studio
+
+**Disable Arc fitting**
+
+1. Note down the x and y position of your object
+2. Slice normally
+3. Create a new directory for the plate model
+4. Add the following to the post-processing script
+
+```sh
+python path/to/gcodezaa -m path/to/models -n object_name.stl -p x,y;
+```
 
 ## Results
 
