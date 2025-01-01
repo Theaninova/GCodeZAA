@@ -14,6 +14,7 @@ class ProcessorContext:
 
     last_p: tuple[float, float, float] = (0, 0, 0)
     last_e: float = 0
+    last_contoured_z: float | None = None
 
     exclude_object: dict[str, open3d.t.geometry.RaycastingScene] = {}
     active_object: open3d.t.geometry.RaycastingScene | None = None

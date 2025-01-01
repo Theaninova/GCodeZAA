@@ -136,14 +136,16 @@ def process_line(ctx: ProcessorContext):
         contour = ctx.extrusion[0].contour_z(
             ctx.active_object,
             z=ctx.z,
-            height=ctx.height,
+            height=float(ctx.config_block["layer_height"]),
             ironing_line=ctx.line_type == ctx.syntax.line_type_ironing,
+            demo_split=None,
         )
         if any(map(lambda extrusion: extrusion.z != ctx.z, contour)):
             ctx.extrusion = contour
             write_back = f"{ctx.line_type.upper()}_CONTOUR"
+            ctx.last_contoured_z = contour[-1].z
 
-    if not write_back and ctx.last_p[2] != ctx.z and len(ctx.extrusion) > 0:
+    if not write_back and ctx.last_contoured_z is not None and len(ctx.extrusion) > 0:
         ctx.extrusion = [
             Extrusion(
                 p=ctx.last_p,
@@ -156,6 +158,7 @@ def process_line(ctx: ProcessorContext):
             ),
             *ctx.extrusion,
         ]
+        ctx.last_contoured_z = None
         write_back = "RESET_Z"
 
     if len(ctx.extrusion) > 0:

@@ -2,6 +2,13 @@ import math
 import open3d
 
 
+def format_gcode_number(number: float) -> str:
+    formatted = f"{number:.6f}"
+    formatted = formatted.rstrip("0")
+    formatted = formatted.lstrip("0")
+    return formatted
+
+
 class Extrusion:
     p: tuple[float, float, float]
     x: float | None
@@ -33,15 +40,15 @@ class Extrusion:
     def __str__(self) -> str:
         line = ""
         if self.x is not None:
-            line += f" X{self.x:.6g}"
+            line += f" X{format_gcode_number(self.x)}"
         if self.y is not None:
-            line += f" Y{self.y:.6g}"
+            line += f" Y{format_gcode_number(self.y)}"
         if self.z is not None:
-            line += f" Z{self.z:.6g}"
+            line += f" Z{format_gcode_number(self.z)}"
         if self.e is not None:
-            line += f" E{self.e:.6g}"
+            line += f" E{format_gcode_number(self.e)}"
         if self.f is not None:
-            line += f" F{self.f:.6g}"
+            line += f" F{format_gcode_number(self.f)}"
         return line
 
     def pos(self) -> tuple[float, float, float]:
@@ -76,7 +83,8 @@ class Extrusion:
         z: float,
         height: float,
         ironing_line: bool,
-        resolution=0.4,
+        resolution=0.1,
+        demo_split: float | None = None,
     ) -> list["Extrusion"]:
         if self.relative:
             raise ValueError("Cannot contour with relative positioning")
@@ -112,14 +120,20 @@ class Extrusion:
             d = extra_z - hit.item()
             if hits["primitive_normals"][i][2].item() < 0:
                 d = float("inf")
-            is_top = d <= height / 2
-            d = max(-extra_z, min(height / 2, d)) if is_top else 0
+            # TODO: proper detection if the surface is covered by another line
+            # in the next layer to avoid blobs
+            # Percentage coverage would be even better as a transition factor
+            # between normal z and contoured z.
+            is_top = d <= (height / 2 + 1e-6) or ironing_line
+            d = max(-height / 2, min(height / 2, d)) if is_top else 0
+
+            do_split = demo_split is not None and rays[i][1] < demo_split
 
             segment = Extrusion(
                 p=p,
                 x=rays[i][0],
                 y=rays[i][1],
-                z=z + d,
+                z=z if do_split else z + d,
                 e=None,
                 f=self.f,
                 relative=False,
@@ -130,9 +144,13 @@ class Extrusion:
 
             if i != 0:
                 extrusion_height = height + d
-                segment.meta = f"{segment.meta} h={extrusion_height:.3g}"
+                segment.meta = f"e={extrusion_height:.3g} {segment.meta}"
                 segment.e = (
-                    extrusion_rate * segment.length() * (extrusion_height / height)
+                    extrusion_rate * segment.length()
+                    if ironing_line or do_split
+                    else (
+                        extrusion_rate * segment.length() * (extrusion_height / height)
+                    )
                 )
                 segment.e = segment.e if segment.e > 0 else 0
 
