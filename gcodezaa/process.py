@@ -25,8 +25,9 @@ def process_gcode(
 ) -> list[str]:
     ctx = ProcessorContext(gcode, model_dir)
     if plate_object is not None:
-        register_object(ctx, plate_object[0], plate_object[1], plate_object[2])
-        ctx.active_object = ctx.exclude_object[plate_object[0]]
+        ctx.active_object = load_object(
+            ctx, plate_object[0], plate_object[1], plate_object[2]
+        )
     is_in_executable = False
     while ctx.gcode_line < len(ctx.gcode):
         if not is_in_executable and ctx.line.startswith(
@@ -44,7 +45,9 @@ def process_gcode(
     return ctx.gcode
 
 
-def register_object(ctx: ProcessorContext, name: str, x: float, y: float):
+def load_object(
+    ctx: ProcessorContext, name: str, x: float, y: float
+) -> open3d.t.geometry.RaycastingScene:
     model_path = os.path.join(ctx.model_dir, name)
     mesh = open3d.t.io.read_triangle_mesh(model_path, enable_post_processing=True)
     min_bound = mesh.get_min_bound()
@@ -55,7 +58,7 @@ def register_object(ctx: ProcessorContext, name: str, x: float, y: float):
     scene = open3d.t.geometry.RaycastingScene()
     scene.add_triangles(mesh)
 
-    ctx.exclude_object[name] = scene
+    return scene
 
 
 def process_line(ctx: ProcessorContext):
@@ -126,7 +129,10 @@ def process_line(ctx: ProcessorContext):
         args = parse_klipper_args(ctx.line.removeprefix("EXCLUDE_OBJECT_DEFINE "))
         name = args["NAME"]
         x, y = map(float, args["CENTER"].split(","))
-        register_object(ctx, re.sub(r"\.stl_.*$", ".stl", name), x, y)
+
+        ctx.exclude_object[name] = load_object(
+            ctx, re.sub(r"\.stl_.*$", ".stl", name), x, y
+        )
     elif ctx.line.startswith("EXCLUDE_OBJECT_START"):
         args = parse_klipper_args(ctx.line.removeprefix("EXCLUDE_OBJECT_START "))
         ctx.active_object = ctx.exclude_object[args["NAME"]]

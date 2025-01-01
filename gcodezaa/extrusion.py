@@ -96,43 +96,64 @@ class Extrusion:
         self.p = (self.p[0], self.p[1], z)
 
         num_segments = math.ceil(self.length() / resolution)
-        extra_z = height * 0.75
-        rays = [
+        extra_z = height
+        rays_up = [
             [
                 self.p[0] + dx * i / num_segments,
                 self.p[1] + dy * i / num_segments,
-                z + extra_z,
+                z,
+                0,
+                0,
+                1,
+            ]
+            for i in range(num_segments + 1)
+        ]
+        hits_up = scene.cast_rays(
+            open3d.core.Tensor(rays_up, dtype=open3d.core.Dtype.Float32)
+        )
+        rays_down = [
+            [
+                self.p[0] + dx * i / num_segments,
+                self.p[1] + dy * i / num_segments,
+                z,
                 0,
                 0,
                 -1,
             ]
             for i in range(num_segments + 1)
         ]
-        hits = scene.cast_rays(
-            open3d.core.Tensor(rays, dtype=open3d.core.Dtype.Float32)
+        hits_down = scene.cast_rays(
+            open3d.core.Tensor(rays_down, dtype=open3d.core.Dtype.Float32)
         )
 
         extrusion_rate = self.e / self.length()
 
         segments = []
         p = self.p
-        for i, hit in enumerate(hits["t_hit"]):
-            d = extra_z - hit.item()
-            if hits["primitive_normals"][i][2].item() < 0:
-                d = float("inf")
-            # TODO: proper detection if the surface is covered by another line
-            # in the next layer to avoid blobs
-            # Percentage coverage would be even better as a transition factor
-            # between normal z and contoured z.
-            is_top = d <= (height / 2 + 1e-6) or ironing_line
-            d = max(-height / 2, min(height / 2, d)) if is_top else 0
+        for i in range(num_segments + 1):
+            hit_up = hits_up["t_hit"][i].item()
+            hit_down = hits_down["t_hit"][i].item()
+            normal_up = hits_up["primitive_normals"][i]
+            normal_down = hits_down["primitive_normals"][i]
+            line_width = 0.4
+            if normal_up[2].item() > 0:
+                normal = normal_up
+                coverage = max(
+                    0,
+                    height / 2 - math.tan(math.acos(normal[2].item())) * line_width / 2,
+                )
+                d = min(hit_up, coverage)
+            else:
+                hit = -hit_down if hit_down <= height / 2 else 0
+                normal = normal_down
+                d = max(-height / 2, min(height / 2, hit))
 
-            do_split = demo_split is not None and rays[i][1] < demo_split
+            do_split = demo_split is not None and rays_up[i][1] < demo_split
 
             segment = Extrusion(
                 p=p,
-                x=rays[i][0],
-                y=rays[i][1],
+                x=rays_up[i][0],
+                y=rays_up[i][1],
                 z=z if do_split else z + d,
                 e=None,
                 f=self.f,
@@ -140,7 +161,7 @@ class Extrusion:
             )
             if segment.length() == 0:
                 continue
-            segment.meta = f"d={hit.item():.3g}"
+            segment.meta = f"d={d:.3g}"
 
             if i != 0:
                 extrusion_height = height + d
