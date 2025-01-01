@@ -159,6 +159,7 @@ def process_line(ctx: ProcessorContext):
             z=ctx.z,
             height=float(ctx.config_block["layer_height"]),
             ironing_line=ctx.line_type == ctx.syntax.line_type_ironing,
+            outer_line=ctx.line_type == ctx.syntax.line_type_outer_wall,
             demo_split=None,
         )
         if any(map(lambda extrusion: extrusion.z != ctx.z, contour)):

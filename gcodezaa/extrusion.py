@@ -83,6 +83,7 @@ class Extrusion:
         z: float,
         height: float,
         ironing_line: bool,
+        outer_line: bool,
         resolution=0.1,
         demo_split: float | None = None,
     ) -> list["Extrusion"]:
@@ -96,7 +97,6 @@ class Extrusion:
         self.p = (self.p[0], self.p[1], z)
 
         num_segments = math.ceil(self.length() / resolution)
-        extra_z = height
         rays_up = [
             [
                 self.p[0] + dx * i / num_segments,
@@ -131,18 +131,16 @@ class Extrusion:
         segments = []
         p = self.p
         for i in range(num_segments + 1):
-            hit_up = hits_up["t_hit"][i].item()
-            hit_down = hits_down["t_hit"][i].item()
+            hit_up = max(0, abs(hits_up["t_hit"][i].item()))
+            hit_down = max(0, abs(hits_down["t_hit"][i].item()))
             normal_up = hits_up["primitive_normals"][i]
             normal_down = hits_down["primitive_normals"][i]
             line_width = 0.4
             if normal_up[2].item() > 0:
                 normal = normal_up
-                coverage = max(
-                    0,
-                    height / 2 - math.tan(math.acos(normal[2].item())) * line_width / 2,
-                )
-                d = min(hit_up, coverage)
+                coverage = math.tan(math.acos(normal[2].item())) * line_width / 2
+                hit = max(0, min(height / 2, hit_up))
+                d = hit * max(0, min(1, (1 - max(0, hit_up - height / 2) / coverage)))
             else:
                 hit = -hit_down if hit_down <= height / 2 else 0
                 normal = normal_down
