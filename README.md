@@ -1,5 +1,13 @@
 # GCodeZAA
 
+**UPDATES:**
+
+Thanks to the [coverage by CNC Kitchen](https://www.youtube.com/watch?v=0Hi9lBjZGIM) this idea has been getting a lot more attention.
+
+- @mnott has started a [Pull Request to OrcaSlicer](https://github.com/OrcaSlicer/OrcaSlicer/pull/12225) which is being welcomed by @SoftFever, [builds are already available](https://github.com/OrcaSlicer/OrcaSlicer/actions/runs/21869111129?pr=12225).
+- @adob has implemented [ZAA directly into BambuStudio](https://github.com/adob/BambuStudio-ZAA/releases)
+- [As it turns out I'm not the first one to come up with this idea](https://arxiv.org/abs/1609.03032)
+
 This is a post-processing script to enable smooth(-ish) non-planar top surfaces through
 a process I've come to call "Z Anti-Aliasing", to differentiate it from true non-planar
 top surfaces. Maybe "Surface Layer Contouring" would be a better name.
