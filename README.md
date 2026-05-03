@@ -4,7 +4,7 @@
 
 Thanks to the [coverage by CNC Kitchen](https://www.youtube.com/watch?v=0Hi9lBjZGIM) this idea has been getting a lot more attention.
 
-- ~~@mnott has started a [Pull Request to OrcaSlicer](https://github.com/OrcaSlicer/OrcaSlicer/pull/12225)~~ [the pull request was taken over](https://github.com/OrcaSlicer/OrcaSlicer/pull/12736) by @adob and is being welcomed by @SoftFever, [builds are already available](https://github.com/OrcaSlicer/OrcaSlicer/actions/runs/23500836246).
+- **OrcaSlicer has ZAA** in the [latest nightly builds](https://github.com/OrcaSlicer/OrcaSlicer/releases/tag/nightly-builds) when you enable expert mode!
 - @adob has implemented [ZAA directly into BambuStudio](https://github.com/adob/BambuStudio-ZAA/releases)
 - [As it turns out I'm not the first one to come up with this idea](https://arxiv.org/abs/1609.03032)
 
